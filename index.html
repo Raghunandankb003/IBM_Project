@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Data Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>AI Data Analyzer</h1>
+    </header>
+
+    <div class="container">
+        <h2>Upload Your CSV File</h2>
+
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <div class="file-upload" onclick="document.getElementById('fileInput').click();">
+                Click to Select File
+            </div>
+            <input type="file" id="fileInput" name="file" accept=".csv" required>
+
+            <button type="submit" id="uploadButton">Upload and Analyze</button>
+        </form>
+
+        <div class="results" id="results" style="display: none;">
+            <h3>Results</h3>
+            <p id="anomalies"></p>
+            <p id="accuracy"></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById("uploadForm");
+        const fileUpload = document.querySelector(".file-upload");
+        const fileInput = document.getElementById("fileInput");
+        const uploadButton = document.getElementById("uploadButton");
+
+        fileUpload.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length > 0) {
+                fileUpload.textContent = `File Selected: ${fileInput.files[0].name}`;
+            } else {
+                fileUpload.textContent = "Click to Select File";
+            }
+        });
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            uploadButton.textContent = "Uploading...";
+            uploadButton.disabled = true;
+
+            try {
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const resultsDiv = document.getElementById("results");
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById("anomalies").textContent = 
+                        `Normal: ${data.anomaly_counts[1]}, Anomalies: ${data.anomaly_counts[-1]}`;
+                    document.getElementById("accuracy").textContent = 
+                        `Model Accuracy: ${(data.model_score * 100).toFixed(2)}%`;
+                    resultsDiv.style.display = "block";
+                } else {
+                    resultsDiv.innerHTML = "<p class='error'>Error processing the file.</p>";
+                    resultsDiv.style.display = "block";
+                }
+            } catch (error) {
+                alert("An error occurred. Please try again.");
+            }
+
+            uploadButton.textContent = "Upload and Analyze";
+            uploadButton.disabled = false;
+        };
+    </script>
+
+</body>
+</html>
